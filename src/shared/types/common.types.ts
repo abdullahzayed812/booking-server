@@ -11,14 +11,15 @@ export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
   message?: string;
-  errors?: ValidationError[];
+  errors?: IValidationError[];
   meta?: PaginationMeta;
 }
 
-export interface ValidationErrorDetail {
+export interface IValidationError {
   field: string;
   message: string;
   code?: string;
+  debug?: Record<string, string | undefined>;
 }
 
 export interface PaginationMeta {

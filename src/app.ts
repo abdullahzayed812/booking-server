@@ -28,10 +28,10 @@ class App {
       helmet({
         contentSecurityPolicy: {
           directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            imgSrc: ["'self'", "data:", "https:"],
+            defaultSrc: ["'self'", "h"],
+            // scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+            // styleSrc: ["'self'", "'unsafe-inline'"],
+            // imgSrc: ["'self'", "data:", "https:"],
           },
         },
         crossOriginEmbedderPolicy: false, // For Socket.IO compatibility
@@ -133,7 +133,7 @@ class App {
       next();
     });
 
-    // Trust proxy headers (for proper IP detection behind load balancers)
+    // Trust proxy headers (for proper IP detection behind load balancers, or reverse proxy eg. Nginx)
     this.app.set("trust proxy", 1);
   }
 
@@ -264,24 +264,27 @@ class App {
         }
       } else {
         // Log unexpected errors
-        logger.error("Unexpected error:", {
-          error: {
-            message: error.message,
-            stack: error.stack,
-            name: error.name,
+        logger.error(
+          {
+            error: {
+              message: error.message,
+              stack: error.stack,
+              name: error.name,
+            },
+            request: {
+              method: req.method,
+              url: req.originalUrl,
+              headers: req.headers,
+              body: req.body,
+              ip: req.ip,
+              userAgent: req.get("User-Agent"),
+              correlationId: req.correlationId,
+              tenantId: req.tenantId,
+              userId: req.user?.id,
+            },
           },
-          request: {
-            method: req.method,
-            url: req.originalUrl,
-            headers: req.headers,
-            body: req.body,
-            ip: req.ip,
-            userAgent: req.get("User-Agent"),
-            correlationId: req.correlationId,
-            tenantId: req.tenantId,
-            userId: req.user?.id,
-          },
-        });
+          "Unexpected error:"
+        );
 
         // Don't expose internal error details in production
         if (config.app.isProduction) {
@@ -294,7 +297,7 @@ class App {
       const errorResponse: ApiResponse = {
         success: false,
         message,
-        errors: errors.length > 0 ? errors : undefined,
+        errors: errors.length > 0 ? errors : [],
         ...(config.app.isDevelopment && {
           debug: {
             stack: error.stack,
