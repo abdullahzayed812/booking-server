@@ -1,10 +1,10 @@
 import { Response } from "express";
-import { ApiResponse, PaginationMeta, ValidationError } from "@/shared/types/common.types";
+import { ApiResponse, IValidationError, PaginationMeta } from "@/shared/types/common.types";
 
 // Success response utilities
 export const sendSuccess = <T = any>(
   res: Response,
-  data?: T,
+  data: T,
   message: string = "Success",
   statusCode: number = 200,
   meta?: PaginationMeta
@@ -44,7 +44,7 @@ export const sendError = (
   res: Response,
   message: string,
   statusCode: number = 400,
-  errors?: ValidationError[],
+  errors?: IValidationError[],
   code?: string
 ): void => {
   const response: ApiResponse = {
@@ -59,7 +59,7 @@ export const sendError = (
 
 export const sendValidationError = (
   res: Response,
-  errors: ValidationError[],
+  errors: IValidationError[],
   message: string = "Validation failed"
 ): void => {
   sendError(res, message, 400, errors, "VALIDATION_ERROR");
@@ -80,7 +80,7 @@ export const sendNotFound = (res: Response, message: string = "Resource not foun
 export const sendConflict = (
   res: Response,
   message: string = "Resource conflict",
-  errors?: ValidationError[]
+  errors?: IValidationError[]
 ): void => {
   sendError(res, message, 409, errors, "CONFLICT");
 };
@@ -139,7 +139,7 @@ export const sendCustomResponse = <T = any>(
   success: boolean,
   message: string,
   data?: T,
-  errors?: ValidationError[],
+  errors?: IValidationError[],
   meta?: any
 ): void => {
   const response: ApiResponse<T> = {

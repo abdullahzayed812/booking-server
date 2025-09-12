@@ -1,66 +1,147 @@
-# Node.js dependencies
+# Dependencies
 node_modules/
-
-# Output directories
-dist/
-build/
-.out/
-
-# Logs
-logs/
-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
+lerna-debug.log*
 
-# Env files
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-task-files)
+.grunt
+
+# Bower dependency directory (https://bower.io/)
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons (https://nodejs.org/api/addons.html)
+build/Release
+
+# Dependency directories
+jspm_packages/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Environment variables
 .env
 .env.local
-.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# Database dumps / secrets
-*.sqlite
-*.db
-*.dump
-*.sql
+# Build output
+dist/
+build/
 
-# Redis / MySQL socket files (if any)
-*.sock
-*.pid
+# Logs
+logs
+*.log
 
-# OS files
+# OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# IDEs and editors
+# IDE
 .vscode/
 .idea/
-*.sublime-workspace
-*.sublime-project
+*.swp
+*.swo
+*~
 
-# Optional: ignore coverage output
+# Temporary files
+tmp/
+temp/
+
+# Database
+*.sqlite
+*.db
+
+# Uploads
+uploads/
+public/uploads/
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+
+# Docker
+.dockerignore
+
+# Testing
 coverage/
 .nyc_output/
+junit.xml
 
-# Optional: ignore test results
-test-results/
+# Documentation
+docs/generated/
 
-# Optional: ignore Redis dump and append-only files
+# Cache
+.cache/
+.parcel-cache/
+
+# Serverless
+.serverless/
+
+# FusionAuth
+.fusionauth/
+
+# Local development
+.local/
+
+# PM2
+.pm2/
+
+# Redis dump
 dump.rdb
-appendonly.aof
 
-# Optional: ignore Docker-related stuff
-docker-compose.override.yml
-*.tar
-*.img
-*.bak
+# MySQL
+*.sql
 
-# Optional: ignore Swagger/OpenAPI auto-generated files
-swagger.json
-openapi.json
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
 
-# Optional: ignore compiled/bundled files
-*.js
-*.js.map
-*.d.ts
+# Kubernetes
+*.kubeconfig

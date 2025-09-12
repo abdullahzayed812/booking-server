@@ -23,13 +23,16 @@ class Server {
     try {
       // Start the HTTP server
       this.httpServer.listen(config.app.port, () => {
-        logger.info(`🚀 Server started successfully!`, {
-          name: config.app.name,
-          port: config.app.port,
-          environment: config.app.env,
-          nodeVersion: process.version,
-          timestamp: new Date(),
-        });
+        logger.info(
+          {
+            name: config.app.name,
+            port: config.app.port,
+            environment: config.app.env,
+            nodeVersion: process.version,
+            timestamp: new Date(),
+          },
+          `🚀 Server started successfully!`
+        );
 
         if (config.app.isDevelopment) {
           logger.info(`📖 API Documentation: http://localhost:${config.app.port}/docs`);
@@ -62,7 +65,7 @@ class Server {
 
       // Log successful startup metrics
       this.logStartupMetrics();
-    } catch (error) {
+    } catch (error: any) {
       logger.error("Failed to start server:", error);
       process.exit(1);
     }
@@ -72,18 +75,21 @@ class Server {
     const memoryUsage = process.memoryUsage();
     const startupTime = process.uptime();
 
-    logger.info("📊 Startup Metrics:", {
-      memory: {
-        rss: `${Math.round(memoryUsage.rss / 1024 / 1024)} MB`,
-        heapTotal: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)} MB`,
-        heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)} MB`,
-        external: `${Math.round(memoryUsage.external / 1024 / 1024)} MB`,
+    logger.info(
+      {
+        memory: {
+          rss: `${Math.round(memoryUsage.rss / 1024 / 1024)} MB`,
+          heapTotal: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)} MB`,
+          heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)} MB`,
+          external: `${Math.round(memoryUsage.external / 1024 / 1024)} MB`,
+        },
+        startupTime: `${startupTime.toFixed(2)}s`,
+        pid: process.pid,
+        platform: process.platform,
+        nodeVersion: process.version,
       },
-      startupTime: `${startupTime.toFixed(2)}s`,
-      pid: process.pid,
-      platform: process.platform,
-      nodeVersion: process.version,
-    });
+      "📊 Startup Metrics:"
+    );
   }
 
   private setupGracefulShutdown(): void {
@@ -110,7 +116,7 @@ class Server {
 
             logger.info("👋 Graceful shutdown completed");
             process.exit(0);
-          } catch (error) {
+          } catch (error: any) {
             logger.error("❌ Error during graceful shutdown:", error);
             process.exit(1);
           }
@@ -121,7 +127,7 @@ class Server {
           logger.error("⏰ Graceful shutdown timeout, forcing exit");
           process.exit(1);
         }, 30000);
-      } catch (error) {
+      } catch (error: any) {
         logger.error("❌ Error during shutdown:", error);
         process.exit(1);
       }
@@ -132,24 +138,27 @@ class Server {
     process.on("SIGINT", () => shutdown("SIGINT"));
 
     // Handle uncaught exceptions
-    process.on("uncaughtException", (error) => {
+    process.on("uncaughtException", (error: any) => {
       logger.error("💥 Uncaught Exception:", error);
       shutdown("uncaughtException");
     });
 
     // Handle unhandled promise rejections
     process.on("unhandledRejection", (reason, promise) => {
-      logger.error("💥 Unhandled Rejection at:", promise, "reason:", reason);
+      logger.error(promise, "reason:", reason, "💥 Unhandled Rejection at:");
       shutdown("unhandledRejection");
     });
 
     // Handle process warnings
     process.on("warning", (warning) => {
-      logger.warn("⚠️ Process Warning:", {
-        name: warning.name,
-        message: warning.message,
-        stack: warning.stack,
-      });
+      logger.warn(
+        {
+          name: warning.name,
+          message: warning.message,
+          stack: warning.stack,
+        },
+        "⚠️ Process Warning:"
+      );
     });
   }
 

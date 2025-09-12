@@ -7,12 +7,12 @@ export interface Appointment extends BaseEntity {
   startTime: string; // HH:mm format
   endTime: string; // HH:mm format
   status: AppointmentStatus;
-  reasonForVisit?: string;
-  notes?: string;
-  cancellationReason?: string;
-  cancelledBy?: string;
-  cancelledAt?: Date;
-  confirmedAt?: Date;
+  reasonForVisit?: string | undefined;
+  notes?: string | undefined;
+  cancellationReason?: string | undefined;
+  cancelledBy?: string | undefined;
+  cancelledAt?: Date | undefined;
+  confirmedAt?: Date | undefined;
 }
 
 export interface CreateAppointmentData {
@@ -22,19 +22,20 @@ export interface CreateAppointmentData {
   appointmentDate: Date;
   startTime: string;
   endTime: string;
-  reasonForVisit?: string;
+  reasonForVisit?: string | undefined;
 }
 
 export interface UpdateAppointmentData {
-  appointmentDate?: Date;
-  startTime?: string;
-  endTime?: string;
-  status?: AppointmentStatus;
-  reasonForVisit?: string;
-  notes?: string;
-  cancellationReason?: string;
-  cancelledBy?: string;
-  confirmedAt?: Date;
+  appointmentDate?: Date | undefined;
+  startTime?: string | undefined;
+  endTime?: string | undefined;
+  status?: AppointmentStatus | undefined;
+  reasonForVisit?: string | undefined;
+  notes?: string | undefined;
+  cancellationReason?: string | undefined;
+  cancelledBy?: string | undefined;
+  cancelledAt?: Date | undefined;
+  confirmedAt?: Date | undefined;
 }
 
 export interface AppointmentWithDetails extends Appointment {
@@ -110,14 +111,14 @@ export class AppointmentEntity {
   get appointmentDateTime(): Date {
     const [hours, minutes] = this.appointment.startTime.split(":").map(Number);
     const dateTime = new Date(this.appointment.appointmentDate);
-    dateTime.setHours(hours, minutes, 0, 0);
+    dateTime.setHours(hours!, minutes, 0, 0);
     return dateTime;
   }
 
   get endDateTime(): Date {
     const [hours, minutes] = this.appointment.endTime.split(":").map(Number);
     const dateTime = new Date(this.appointment.appointmentDate);
-    dateTime.setHours(hours, minutes, 0, 0);
+    dateTime.setHours(hours!, minutes, 0, 0);
     return dateTime;
   }
 
