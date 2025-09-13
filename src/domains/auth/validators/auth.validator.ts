@@ -109,7 +109,7 @@ export const validateRequest = (schema: z.ZodSchema) => {
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const validationErrors = error.errors.map((err) => ({
+        const validationErrors = (error as any).errors.map((err: any) => ({
           field: err.path.join("."),
           message: err.message,
           code: err.code,
@@ -135,7 +135,7 @@ export const validateQuery = (schema: z.ZodSchema) => {
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const validationErrors = error.errors.map((err) => ({
+        const validationErrors = (error as any).errors.map((err: any) => ({
           field: err.path.join("."),
           message: err.message,
           code: err.code,
@@ -161,7 +161,7 @@ export const validateParams = (schema: z.ZodSchema) => {
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const validationErrors = error.errors.map((err) => ({
+        const validationErrors = (error as any).errors.map((err: any) => ({
           field: err.path.join("."),
           message: err.message,
           code: err.code,

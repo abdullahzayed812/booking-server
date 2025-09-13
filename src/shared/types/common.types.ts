@@ -10,9 +10,9 @@ export interface BaseEntity {
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
-  message?: string;
-  errors?: IValidationError[];
-  meta?: PaginationMeta;
+  message?: string | undefined;
+  errors?: IValidationError[] | undefined;
+  meta?: PaginationMeta | undefined;
 }
 
 export interface IValidationError {

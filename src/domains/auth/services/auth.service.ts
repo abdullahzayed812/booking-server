@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import jwt, { SignOptions } from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { config } from "@/shared/config/environment";
 import { redis } from "@/shared/config/redis";
@@ -116,13 +116,7 @@ export class AuthService {
 
       // Update last login
       user.markAsLoggedIn();
-      await this.userRepository.update(
-        user.id,
-        {
-          lastLoginAt: user.lastLoginAt,
-        },
-        tenantId
-      );
+      await this.userRepository.update(user.id, { lastLoginAt: user.lastLoginAt! }, tenantId);
 
       // Create session and tokens
       const sessionId = uuidv4();
@@ -385,11 +379,11 @@ export class AuthService {
 
     const accessToken = jwt.sign(jwtPayload, config.jwt.accessSecret, {
       expiresIn: config.jwt.accessExpiresIn,
-    });
+    } as SignOptions);
 
     const refreshToken = jwt.sign(refreshPayload, config.jwt.refreshSecret, {
       expiresIn: config.jwt.refreshExpiresIn,
-    });
+    } as SignOptions);
 
     return { accessToken, refreshToken };
   }
@@ -467,7 +461,7 @@ export class AuthService {
     const match = expiresIn.match(/^(\d+)([smhd])$/);
     if (!match) return 3600; // Default 1 hour
 
-    const value = parseInt(match[1]);
+    const value = parseInt(match[1]!);
     const unit = match[2];
 
     switch (unit) {
@@ -495,7 +489,7 @@ export class AuthService {
       tenantId: userData.tenant_id,
       isActive: userData.isActive,
       isVerified: userData.isVerified,
-      lastLoginAt: userData.lastLoginAt,
+      lastLoginAt: userData.lastLoginAt!,
       createdAt: userData.created_at,
       updatedAt: userData.updated_at,
     };

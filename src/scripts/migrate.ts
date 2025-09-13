@@ -10,8 +10,8 @@ interface Migration {
 }
 
 class MigrationRunner {
-  private migrationsPath = path.join(__dirname, "../src/database/migrations");
-  private tableName = "migrations";
+  private migrationsPath = path.join(__dirname, "../database/migrations");
+  private readonly tableName = "migrations";
 
   async run(): Promise<void> {
     try {
@@ -212,7 +212,7 @@ async function main() {
       await migrationRunner.run();
       break;
     case "down":
-      const steps = parseInt(process.argv[3]) || 1;
+      const steps = parseInt(process.argv[3]!) || 1;
       await migrationRunner.rollback(steps);
       break;
     case "status":

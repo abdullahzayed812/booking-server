@@ -45,7 +45,7 @@ export class UserRepository {
       );
 
       // Fetch the created user
-      const createdUser = await this.findById(result[0].insertId, userData.tenantId);
+      const createdUser = await this.findById(result[0]!.insertId, userData.tenantId);
       if (!createdUser) {
         throw new Error("Failed to create user");
       }

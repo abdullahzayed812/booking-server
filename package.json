@@ -1,18 +1,24 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "main": "jest.config.js",
-  "directories": {
-    "doc": "docs",
-    "test": "tests"
-  },
+  "main": "dist/server.js",
+  "description": "Multi-tenant doctor appointment booking system",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "migrate": "tsx src/scripts/migrate.ts",
+    "seed": "tsx src/scripts/seed.ts",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "swagger": "swagger-jsdoc -d src/api/swagger/swagger.config.ts src/domains/**/*.ts -o docs/api/swagger.json"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "compression": "^1.8.1",

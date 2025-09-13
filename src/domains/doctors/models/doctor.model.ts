@@ -40,10 +40,10 @@ export interface CreateDoctorData {
   tenantId: string;
   userId: string;
   specialization: string;
-  licenseNumber?: string;
-  bio?: string;
-  consultationFee?: number;
-  consultationDuration?: number;
+  licenseNumber?: string | undefined;
+  bio?: string | undefined;
+  consultationFee?: number | undefined;
+  consultationDuration?: number | undefined;
 }
 
 export interface UpdateDoctorData {
@@ -67,10 +67,10 @@ export interface CreateAvailabilityOverrideData {
   tenantId: string;
   doctorId: string;
   date: Date;
-  startTime?: string;
-  endTime?: string;
+  startTime?: string | undefined;
+  endTime?: string | undefined;
   isAvailable: boolean;
-  reason?: string;
+  reason?: string | undefined;
 }
 
 // Domain methods for Doctor entity

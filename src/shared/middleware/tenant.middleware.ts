@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z } from "zod";
+// import { z } from "zod";
 import { db } from "../config/database";
 import { redis } from "../config/redis";
 import { logger } from "../config/logger";
@@ -15,10 +15,10 @@ interface Tenant {
   updatedAt: Date;
 }
 
-const tenantHeaderSchema = z.object({
-  "x-tenant-id": z.string().uuid().optional(),
-  "x-tenant-subdomain": z.string().min(1).optional(),
-});
+// const tenantHeaderSchema = z.object({
+//   "x-tenant-id": z.string().uuid().optional(),
+//   "x-tenant-subdomain": z.string().min(1).optional(),
+// });
 
 export const tenantMiddleware = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -51,7 +51,7 @@ export const tenantMiddleware = async (req: Request, res: Response, next: NextFu
       tenant = await getTenantById(tenantId);
     } else if (subdomain || hostSubdomain) {
       const targetSubdomain = subdomain || hostSubdomain;
-      tenant = await getTenantBySubdomain(targetSubdomain);
+      tenant = await getTenantBySubdomain(targetSubdomain!);
     }
 
     if (!tenant) {
@@ -154,7 +154,7 @@ function extractSubdomainFromHost(host?: string): string | null {
 
   // For production domains (subdomain.domain.com), extract subdomain
   if (parts.length >= 3) {
-    return parts[0];
+    return parts[0]!;
   }
 
   return null;
