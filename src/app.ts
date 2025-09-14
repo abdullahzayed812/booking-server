@@ -163,6 +163,8 @@ class App {
     // apiV1.use('/appointments', appointmentRoutes); // To be implemented
     // apiV1.use('/doctors', doctorRoutes); // To be implemented
     // apiV1.use('/patients', patientRoutes); // To be implemented
+    // apiV1.use('/patients', patientRoutes); // To be implemented
+    // apiV1.use('/medical-note', medicalNoteRoutes); // To be implemented
     // apiV1.use('/notifications', notificationRoutes); // To be implemented
     // apiV1.use('/analytics', analyticsRoutes); // To be implemented
 
@@ -185,20 +187,20 @@ class App {
     });
 
     // Catch-all route for unmatched endpoints
-    this.app.all("*", (req: Request, res: Response) => {
-      const error: ApiResponse = {
-        success: false,
-        message: `Route ${req.method} ${req.originalUrl} not found`,
-        errors: [
-          {
-            field: "route",
-            message: "Endpoint not found",
-            code: "ROUTE_NOT_FOUND",
-          },
-        ],
-      };
-      res.status(404).json(error);
-    });
+    // this.app.all("*", (req: Request, res: Response) => {
+    //   const error: ApiResponse = {
+    //     success: false,
+    //     message: `Route ${req.method} ${req.originalUrl} not found`,
+    //     errors: [
+    //       {
+    //         field: "route",
+    //         message: "Endpoint not found",
+    //         code: "ROUTE_NOT_FOUND",
+    //       },
+    //     ],
+    //   };
+    //   res.status(404).json(error);
+    // });
   }
 
   private initializeSwagger(): void {

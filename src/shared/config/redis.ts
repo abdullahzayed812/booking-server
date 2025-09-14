@@ -36,15 +36,15 @@ class RedisManager {
   private setupEventHandlers(): void {
     // Main client events
     this.client.on("connect", () => logger.info("✅ Redis client connected"));
-    this.client.on("error", (error) => logger.error("❌ Redis client error:", error));
+    this.client.on("error", (error) => logger.error(error, "❌ Redis client error:"));
 
     // Publisher events
     this.publisher.on("connect", () => logger.info("✅ Redis publisher connected"));
-    this.publisher.on("error", (error) => logger.error("❌ Redis publisher error:", error));
+    this.publisher.on("error", (error) => logger.error(error, "❌ Redis publisher error:"));
 
     // Subscriber events
     this.subscriber.on("connect", () => logger.info("✅ Redis subscriber connected"));
-    this.subscriber.on("error", (error) => logger.error("❌ Redis subscriber error:", error));
+    this.subscriber.on("error", (error) => logger.error(error, "❌ Redis subscriber error:"));
   }
 
   private async connect(): Promise<void> {
