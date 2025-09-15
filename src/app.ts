@@ -155,11 +155,8 @@ class App {
       res.status(200).json(healthCheck);
     });
 
-    // API version routing
-    const apiV1 = express.Router();
-
     // Mount domain routes
-    apiV1.use("/auth", authRoutes);
+    this.app.use("/api/auth", authRoutes);
     // apiV1.use('/appointments', appointmentRoutes); // To be implemented
     // apiV1.use('/doctors', doctorRoutes); // To be implemented
     // apiV1.use('/patients', patientRoutes); // To be implemented
@@ -168,7 +165,7 @@ class App {
     // apiV1.use('/notifications', notificationRoutes); // To be implemented
     // apiV1.use('/analytics', analyticsRoutes); // To be implemented
 
-    this.app.use(`/api/${config.app.apiVersion}`, apiV1);
+    // this.app.use(`/api/${config.app.apiVersion}`, apiV1);
 
     // System routes (no tenant required)
     this.app.get("/api/system/info", (req: Request, res: Response) => {

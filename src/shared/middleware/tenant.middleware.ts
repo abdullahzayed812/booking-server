@@ -101,7 +101,7 @@ async function getTenantById(tenantId: string): Promise<Tenant | null> {
     }
 
     // Query database
-    const tenant = await db.queryOne<Tenant>("SELECT * FROM tenants WHERE id = ? AND deleted_at IS NULL", [tenantId]);
+    const tenant = await db.queryOne<Tenant>(`SELECT * FROM tenants WHERE id = ? AND deleted_at IS NULL`, [tenantId]);
 
     if (tenant) {
       // Cache for 1 hour

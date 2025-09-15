@@ -74,7 +74,7 @@ class MigrationRunner {
 
   private async getExecutedMigrations(): Promise<Migration[]> {
     try {
-      return await db.query<Migration>(`SELECT * FROM ${this.tableName} ORDER BY id`);
+      return await db.query<Migration>("SELECT * FROM ? ORDER BY id", [this.tableName]);
     } catch (error: any) {
       // Table might not exist yet
       return [];

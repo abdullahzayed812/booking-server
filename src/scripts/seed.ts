@@ -138,8 +138,9 @@ class DatabaseSeeder {
       await db.query(
         `INSERT INTO users (
           id, tenant_id, email, password_hash, first_name, last_name, 
-          phone, date_of_birth, role, is_verified
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          phone, date_of_birth, role, is_active, is_verified, 
+          email_verified_at, last_login_at, password_changed_at, token_version
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           user.id,
           user.tenant_id,
@@ -147,10 +148,15 @@ class DatabaseSeeder {
           hashedPassword,
           user.first_name,
           user.last_name,
-          user.phone,
-          user.date_of_birth,
+          user.phone || null,
+          user.date_of_birth || null,
           user.role,
+          true, // is_active
           user.is_verified,
+          user.is_verified ? new Date() : null,
+          null, // last_login_at
+          new Date(), // password_changed_at
+          0, // token_version
         ]
       );
     }
@@ -186,8 +192,8 @@ class DatabaseSeeder {
       await db.query(
         `INSERT INTO doctors (
           id, tenant_id, specialization, license_number, bio, 
-          consultation_fee, consultation_duration
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          consultation_fee, consultation_duration, is_accepting_appointments
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           doctor.id,
           doctor.tenant_id,
@@ -196,6 +202,7 @@ class DatabaseSeeder {
           doctor.bio,
           doctor.consultation_fee,
           doctor.consultation_duration,
+          true,
         ]
       );
     }
@@ -276,14 +283,15 @@ class DatabaseSeeder {
     for (const availability of availabilities) {
       await db.query(
         `INSERT INTO doctor_availability (
-          tenant_id, doctor_id, day_of_week, start_time, end_time
-        ) VALUES (?, ?, ?, ?, ?)`,
+          tenant_id, doctor_id, day_of_week, start_time, end_time, is_active
+        ) VALUES (?, ?, ?, ?, ?, ?)`,
         [
           availability.tenant_id,
           availability.doctor_id,
           availability.day_of_week,
           availability.start_time,
           availability.end_time,
+          true,
         ]
       );
     }
@@ -329,8 +337,9 @@ class DatabaseSeeder {
       await db.query(
         `INSERT INTO appointments (
           tenant_id, doctor_id, patient_id, appointment_date,
-          start_time, end_time, status, reason_for_visit
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          start_time, end_time, status, reason_for_visit,
+          notes, cancellation_reason, cancelled_by, cancelled_at, confirmed_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           appointment.tenant_id,
           appointment.doctor_id,
@@ -340,6 +349,11 @@ class DatabaseSeeder {
           appointment.end_time,
           appointment.status,
           appointment.reason_for_visit,
+          null, // notes
+          null, // cancellation_reason
+          null, // cancelled_by
+          null, // cancelled_at
+          appointment.status === "confirmed" ? new Date() : null, // confirmed_at
         ]
       );
     }
