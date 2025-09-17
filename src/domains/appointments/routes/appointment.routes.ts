@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticateToken, requireRole, requirePermission } from "@/shared/middleware/auth.middleware";
 import { validateBody, validateParams, validateQuery } from "@/shared/middleware/validation.middleware";
+import { tenantMiddleware } from "@/shared/middleware/tenant.middleware";
 import { generalRateLimit, createResourceRateLimit } from "@/shared/middleware/rate-limit.middleware";
 import { UserRole } from "@/shared/types/common.types";
 import { Action, Resource } from "@/shared/types/auth.types";
@@ -19,11 +20,22 @@ import {
 const router = Router();
 const appointmentController = new AppointmentController();
 
+// Routes that require tenant context
+router.use(tenantMiddleware);
+
 // Apply authentication to all routes
 router.use(authenticateToken);
 
 // Health check
 router.get("/health", appointmentController.healthCheck);
+
+// Get dashboard stats - must come before generic routes
+router.get(
+  "/stats",
+  generalRateLimit,
+  requirePermission(Resource.APPOINTMENT, Action.READ),
+  appointmentController.getDashboardStats
+);
 
 // Create appointment
 router.post(

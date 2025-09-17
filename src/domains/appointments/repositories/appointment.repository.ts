@@ -11,6 +11,16 @@ import {
 
 const moduleLogger = createModuleLogger("AppointmentRepository");
 
+export interface DashboardStats {
+  total: number;
+  pending: number;
+  confirmed: number;
+  completed: number;
+  todayAppointments: number;
+  cancelled?: number;
+  noShow?: number;
+}
+
 export class AppointmentRepository {
   private readonly CACHE_TTL = 300; // 5 minutes
 
@@ -402,6 +412,104 @@ export class AppointmentRepository {
       }));
     } catch (error: any) {
       moduleLogger.error("Error getting upcoming appointments:", error);
+      throw error;
+    }
+  }
+
+  async getDashboardStats(tenantId: string, userId?: string, userRole?: string): Promise<DashboardStats> {
+    try {
+      const cacheKey = `dashboard_stats:${tenantId}:${userId || "all"}:${userRole || "all"}`;
+      const cached = await redis.get<DashboardStats>(cacheKey, tenantId);
+
+      if (cached) {
+        return cached;
+      }
+
+      let whereClause = "WHERE tenant_id = ?";
+      const params: any[] = [tenantId];
+
+      // Apply role-based filtering
+      if (userRole === "doctor" && userId) {
+        whereClause += " AND doctor_id = ?";
+        params.push(userId);
+      } else if (userRole === "patient" && userId) {
+        whereClause += " AND patient_id = ?";
+        params.push(userId);
+      }
+
+      const statsQueries = await Promise.all([
+        // Total appointments
+        db.queryOne(`SELECT COUNT(*) as count FROM appointments ${whereClause}`, params, tenantId),
+
+        // Pending appointments (scheduled)
+        db.queryOne(
+          `SELECT COUNT(*) as count FROM appointments ${whereClause} AND status = 'scheduled'`,
+          params,
+          tenantId
+        ),
+
+        // Confirmed appointments
+        db.queryOne(
+          `SELECT COUNT(*) as count FROM appointments ${whereClause} AND status = 'confirmed'`,
+          params,
+          tenantId
+        ),
+
+        // Completed appointments
+        db.queryOne(
+          `SELECT COUNT(*) as count FROM appointments ${whereClause} AND status = 'completed'`,
+          params,
+          tenantId
+        ),
+
+        // Today's appointments
+        db.queryOne(
+          `SELECT COUNT(*) as count FROM appointments ${whereClause} AND DATE(appointment_date) = CURDATE()`,
+          params,
+          tenantId
+        ),
+
+        // Cancelled appointments
+        db.queryOne(
+          `SELECT COUNT(*) as count FROM appointments ${whereClause} AND status = 'cancelled'`,
+          params,
+          tenantId
+        ),
+
+        // No-show appointments
+        db.queryOne(
+          `SELECT COUNT(*) as count FROM appointments ${whereClause} AND status = 'no_show'`,
+          params,
+          tenantId
+        ),
+      ]);
+
+      const stats: DashboardStats = {
+        total: parseInt(statsQueries[0]?.count || "0"),
+        pending: parseInt(statsQueries[1]?.count || "0"),
+        confirmed: parseInt(statsQueries[2]?.count || "0"),
+        completed: parseInt(statsQueries[3]?.count || "0"),
+        todayAppointments: parseInt(statsQueries[4]?.count || "0"),
+        cancelled: parseInt(statsQueries[5]?.count || "0"),
+        noShow: parseInt(statsQueries[6]?.count || "0"),
+      };
+
+      // Cache for 5 minutes
+      await redis.set(cacheKey, stats, this.CACHE_TTL, tenantId);
+
+      moduleLogger.info(
+        {
+          tenantId,
+          userId,
+          userRole,
+          stats,
+        },
+        "Dashboard stats retrieved successfully"
+      );
+
+      return stats;
+    } catch (error: any) {
+      moduleLogger.error("Error getting dashboard stats:", error);
       throw error;
     }
   }

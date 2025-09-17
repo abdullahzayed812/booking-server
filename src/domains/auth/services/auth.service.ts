@@ -50,8 +50,8 @@ export class AuthService {
 
       // Create session and tokens
       const sessionId = uuidv4();
-      const session = await this.createUserSession(user, sessionId);
       const tokens = await this.generateTokens(user, sessionId);
+      const session = await this.createUserSession(user, sessionId);
 
       // Log security event
       await this.logSecurityEvent(SecurityEvent.LOGIN_SUCCESS, user.id, tenantId);
@@ -120,8 +120,8 @@ export class AuthService {
 
       // Create session and tokens
       const sessionId = uuidv4();
-      const session = await this.createUserSession(user, sessionId, metadata);
       const tokens = await this.generateTokens(user, sessionId);
+      const session = await this.createUserSession(user, sessionId, metadata, tokens.refreshToken);
 
       // Log successful login
       await this.logSecurityEvent(SecurityEvent.LOGIN_SUCCESS, user.id, tenantId, metadata);
@@ -388,7 +388,12 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  private async createUserSession(user: UserEntity, sessionId: string, metadata?: any): Promise<UserSession> {
+  private async createUserSession(
+    user: UserEntity,
+    sessionId: string,
+    metadata?: any,
+    refreshToken?: string // <- add this
+  ): Promise<UserSession> {
     const session: UserSession = {
       id: sessionId,
       userId: user.id,
@@ -402,16 +407,20 @@ export class AuthService {
       tokenVersion: user.tokenVersion,
     };
 
-    // Store in Redis with TTL
     const ttl = this.getTokenExpiresIn(config.jwt.refreshExpiresIn);
+
+    // 🔐 Generate refresh token hash
+    const refreshTokenHash = refreshToken ? await bcrypt.hash(refreshToken, 10) : ""; // You could also throw if missing
+
+    // Save to Redis
     await redis.setSession(sessionId, session, ttl);
 
-    // Store in database for persistence
+    // Save to DB
     await db.query(
       `INSERT INTO user_sessions 
-       (id, user_id, tenant_id, is_active, expires_at, ip_address, user_agent)
-       VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND), ?, ?)`,
-      [sessionId, user.id, user.tenantId, true, ttl, metadata?.ipAddress, metadata?.userAgent],
+     (id, user_id, tenant_id, refresh_token_hash, is_active, expires_at, ip_address, user_agent)
+     VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND), ?, ?)`,
+      [sessionId, user.id, user.tenantId, refreshTokenHash, true, ttl, metadata?.ipAddress, metadata?.userAgent],
       user.tenantId
     );
 

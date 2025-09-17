@@ -270,6 +270,20 @@ export class AppointmentController {
     }
   };
 
+  getDashboardStats = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const tenantId = req.tenantId!;
+      const userId = req.user!.id;
+      const userRole = req.user!.role;
+
+      const stats = await this.appointmentService.getDashboardStats(tenantId, userId, userRole);
+
+      sendSuccess(res, stats, "Dashboard stats retrieved successfully");
+    } catch (error) {
+      next(error);
+    }
+  };
+
   /**
    * Health check for appointments service
    */

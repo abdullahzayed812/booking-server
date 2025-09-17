@@ -2,7 +2,7 @@ import { createModuleLogger } from "@/shared/config/logger";
 import { ValidationError, NotFoundError, AppointmentStatus } from "@/shared/types/common.types";
 import { UserRole } from "@/shared/types/common.types";
 import { eventBus, EventTypes } from "@/shared/events/event-bus";
-import { AppointmentRepository } from "../repositories/appointment.repository";
+import { AppointmentRepository, DashboardStats } from "../repositories/appointment.repository";
 import { ConflictCheckerService } from "./conflict-checker.service";
 import {
   AppointmentEntity,
@@ -412,6 +412,17 @@ export class AppointmentService {
       return await this.appointmentRepository.getUpcomingAppointments(tenantId, limit);
     } catch (error: any) {
       moduleLogger.error("Error getting upcoming appointments:", error);
+      throw error;
+    }
+  }
+
+  async getDashboardStats(tenantId: string, userId?: string, userRole?: string): Promise<DashboardStats> {
+    try {
+      const stats = await this.appointmentRepository.getDashboardStats(tenantId, userId, userRole);
+
+      return stats;
+    } catch (error: any) {
+      moduleLogger?.error("Error getting dashboard stats:", error);
       throw error;
     }
   }

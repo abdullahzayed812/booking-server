@@ -1,24 +1,10 @@
 import { Request, Response, NextFunction } from "express";
-// import { z } from "zod";
 import { db } from "../config/database";
 import { redis } from "../config/redis";
 import { logger } from "../config/logger";
 import { AppError, CACHE_KEYS } from "../types/common.types";
-
-interface Tenant {
-  id: string;
-  name: string;
-  subdomain: string;
-  isActive: boolean;
-  settings: any;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// const tenantHeaderSchema = z.object({
-//   "x-tenant-id": z.string().uuid().optional(),
-//   "x-tenant-subdomain": z.string().min(1).optional(),
-// });
+import { TenantEntity } from "./tenant.entity";
+import { Tenant } from "../types/tenant.types";
 
 export const tenantMiddleware = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -94,20 +80,19 @@ export const tenantMiddleware = async (req: Request, res: Response, next: NextFu
 
 async function getTenantById(tenantId: string): Promise<Tenant | null> {
   try {
-    // Try cache first
-    const cached = await redis.get<Tenant>(CACHE_KEYS.TENANT(tenantId));
+    const cacheKey = CACHE_KEYS.TENANT(tenantId);
+    const cached = await redis.get<Tenant>(cacheKey);
     if (cached) {
       return cached;
     }
 
-    // Query database
-    const tenant = await db.queryOne<Tenant>(`SELECT * FROM tenants WHERE id = ? AND deleted_at IS NULL`, [tenantId]);
+    const rawTenant = await db.queryOne(`SELECT * FROM tenants WHERE id = ? AND deleted_at IS NULL`, [tenantId]);
+    if (!rawTenant) return null;
 
-    if (tenant) {
-      // Cache for 1 hour
-      await redis.set(CACHE_KEYS.TENANT(tenantId), tenant, 3600);
-    }
+    const tenantEntity = TenantEntity.fromDatabase(rawTenant);
+    const tenant = tenantEntity.getRawData();
 
+    await redis.set(cacheKey, tenant, 3600);
     return tenant;
   } catch (error: any) {
     logger.error("Error fetching tenant by ID:", error);
@@ -117,23 +102,22 @@ async function getTenantById(tenantId: string): Promise<Tenant | null> {
 
 async function getTenantBySubdomain(subdomain: string): Promise<Tenant | null> {
   try {
-    // Try cache first
     const cacheKey = `tenant:subdomain:${subdomain}`;
     const cached = await redis.get<Tenant>(cacheKey);
     if (cached) {
       return cached;
     }
 
-    // Query database
-    const tenant = await db.queryOne<Tenant>("SELECT * FROM tenants WHERE subdomain = ? AND deleted_at IS NULL", [
+    const rawTenant = await db.queryOne(`SELECT * FROM tenants WHERE subdomain = ? AND deleted_at IS NULL`, [
       subdomain,
     ]);
+    if (!rawTenant) return null;
 
-    if (tenant) {
-      // Cache for 1 hour
-      await redis.set(cacheKey, tenant, 3600);
-      await redis.set(CACHE_KEYS.TENANT(tenant.id), tenant, 3600);
-    }
+    const tenantEntity = TenantEntity.fromDatabase(rawTenant);
+    const tenant = tenantEntity.getRawData();
+
+    await redis.set(cacheKey, tenant, 3600);
+    await redis.set(CACHE_KEYS.TENANT(tenant.id), tenant, 3600);
 
     return tenant;
   } catch (error: any) {

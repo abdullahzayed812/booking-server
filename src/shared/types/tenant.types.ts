@@ -6,7 +6,7 @@ export interface Tenant extends BaseEntity {
   subdomain: string;
   settings: TenantSettings;
   isActive: boolean;
-  deletedAt?: Date;
+  deletedAt?: Date | undefined;
 }
 
 // Tenant settings interface

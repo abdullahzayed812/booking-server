@@ -1,3 +1,4 @@
+import { AuthUser } from "@/shared/types/auth.types";
 import { BaseEntity, UserRole } from "@/shared/types/common.types";
 
 export interface User extends BaseEntity {
@@ -231,6 +232,22 @@ export class UserEntity {
       created_at: this.user.created_at,
       updated_at: this.user.updated_at,
       deleted_at: this.user.deletedAt,
+    };
+  }
+
+  toAuthUser(): AuthUser {
+    return {
+      id: this.user.id,
+      email: this.user.email,
+      firstName: this.user.firstName,
+      lastName: this.user.lastName,
+      role: this.user.role,
+      tenantId: this.user.tenant_id,
+      isActive: this.user.isActive,
+      isVerified: this.user.isVerified,
+      lastLoginAt: this.user.lastLoginAt!,
+      createdAt: this.user.created_at,
+      updatedAt: this.user.updated_at,
     };
   }
 

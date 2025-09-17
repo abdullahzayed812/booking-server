@@ -43,10 +43,10 @@ export const generalRateLimit = rateLimit({
   } as ApiResponse,
   standardHeaders: true,
   legacyHeaders: false,
-  store: new RedisStore(config.rateLimit.windowMs),
-  keyGenerator: (req) => {
-    return `rate_limit:general:${req.ip}:${req.tenantId || "no-tenant"}`;
-  },
+  store: new RedisStore(config.rateLimit.windowMs) as any,
+  // keyGenerator: (req) => {
+  //   return `rate_limit:general:${req.ip}:${req.tenantId || "no-tenant"}`;
+  // },
   skip: (req) => {
     // Skip rate limiting for health checks and system endpoints
     return req.path.startsWith("/health") || req.path.startsWith("/metrics") || req.path.startsWith("/api/system");
@@ -64,12 +64,12 @@ export const authRateLimit = rateLimit({
   } as ApiResponse,
   standardHeaders: true,
   legacyHeaders: false,
-  store: new RedisStore(15 * 60 * 1000),
-  keyGenerator: (req) => {
-    // Use email from request body for login attempts, IP otherwise
-    const identifier = req.body?.email || req.ip;
-    return `rate_limit:auth:${identifier}:${req.tenantId || "no-tenant"}`;
-  },
+  store: new RedisStore(15 * 60 * 1000) as any,
+  // keyGenerator: (req) => {
+  //   // Use email from request body for login attempts, IP otherwise
+  //   const identifier = req.body?.email || req.ip;
+  //   return `rate_limit:auth:${identifier}:${req.tenantId || "no-tenant"}`;
+  // },
 });
 
 // Password-related rate limiting (more restrictive)
@@ -83,11 +83,11 @@ export const passwordRateLimit = rateLimit({
   } as ApiResponse,
   standardHeaders: true,
   legacyHeaders: false,
-  store: new RedisStore(60 * 60 * 1000),
-  keyGenerator: (req) => {
-    const userId = req.user?.id || req.ip;
-    return `rate_limit:password:${userId}:${req.tenantId}`;
-  },
+  store: new RedisStore(60 * 60 * 1000) as any,
+  // keyGenerator: (req) => {
+  //   const userId = req.user?.id || req.ip;
+  //   return `rate_limit:password:${userId}:${req.tenantId}`;
+  // },
 });
 
 // API creation rate limiting
@@ -101,11 +101,11 @@ export const createResourceRateLimit = rateLimit({
   } as ApiResponse,
   standardHeaders: true,
   legacyHeaders: false,
-  store: new RedisStore(60 * 1000),
-  keyGenerator: (req) => {
-    const userId = req.user?.id || req.ip;
-    return `rate_limit:create:${userId}:${req.tenantId}`;
-  },
+  store: new RedisStore(60 * 1000) as any,
+  // keyGenerator: (req) => {
+  //   const userId = req.user?.id || req.ip;
+  //   return `rate_limit:create:${userId}:${req.tenantId}`;
+  // },
 });
 
 // WebSocket connection rate limiting
@@ -119,9 +119,9 @@ export const websocketRateLimit = rateLimit({
   } as ApiResponse,
   standardHeaders: true,
   legacyHeaders: false,
-  store: new RedisStore(5 * 60 * 1000),
-  keyGenerator: (req) => {
-    const userId = req.user?.id || req.ip;
-    return `rate_limit:websocket:${userId}:${req.tenantId}`;
-  },
+  store: new RedisStore(5 * 60 * 1000) as any,
+  // keyGenerator: (req) => {
+  //   const userId = req.user?.id || req.ip;
+  //   return `rate_limit:websocket:${userId}:${req.tenantId}`;
+  // },
 });

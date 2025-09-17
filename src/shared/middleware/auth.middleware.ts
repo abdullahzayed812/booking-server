@@ -6,6 +6,7 @@ import { db } from "../config/database";
 import { logger } from "../config/logger";
 import { AppError, UnauthorizedError, ForbiddenError, CACHE_KEYS, UserRole } from "../types/common.types";
 import { JwtPayload, AuthUser, Resource, Action, PermissionContext } from "../types/auth.types";
+import { UserEntity } from "@/domains/auth/models/user.model";
 
 export const authenticateToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -35,15 +36,19 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
     let user = await redis.get<AuthUser>(CACHE_KEYS.USER(payload.id), req.tenantId);
 
     if (!user) {
-      user = await db.queryOne<AuthUser>(
+      const dbUser = await db.queryOne(
         "SELECT * FROM users WHERE id = ? AND tenant_id = ? AND is_active = true",
         [payload.id, payload.tenantId],
         req.tenantId
       );
 
-      if (!user) {
+      if (!dbUser) {
         throw new UnauthorizedError("User not found or inactive");
       }
+
+      const userEntity = UserEntity.fromDatabase(dbUser);
+
+      user = userEntity.toAuthUser();
 
       // Cache user for 15 minutes
       await redis.set(CACHE_KEYS.USER(user.id), user, 900, req.tenantId);
@@ -59,7 +64,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
     req.sessionId = payload.sessionId;
 
     // Update last activity
-    await redis.hSet(`session:${payload.sessionId}`, "lastActivityAt", new Date());
+    await redis.hSet(`session:${payload.sessionId}`, "lastActivityAt", new Date(), user.tenantId);
 
     logger.debug(
       {
@@ -86,7 +91,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
     }
 
     logger.error("Authentication error:", error);
-    next(new UnauthorizedError("Authentication failed"));
+    return next(new UnauthorizedError("Authentication failed"));
   }
 };
 
@@ -137,7 +142,7 @@ export const requirePermission = (resource: Resource, action: Action) => {
         role: req.user.role,
         resource,
         action,
-        resourceId: req.params.id,
+        resourceId: req.params["id"],
       };
 
       const hasPermission = await checkPermission(context);
@@ -180,7 +185,7 @@ async function checkPermission(context: PermissionContext): Promise<boolean> {
       return checkAvailabilityPermission(context);
 
     case Resource.ANALYTICS:
-      return role === UserRole.ADMIN; // Only admins can access analytics
+      return role === (UserRole.ADMIN as string); // Only admins can access analytics
 
     default:
       return false;

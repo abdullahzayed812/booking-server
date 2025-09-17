@@ -7,9 +7,10 @@ import rateLimit from "express-rate-limit";
 import { config } from "./shared/config/environment";
 import { logger, logRequest } from "./shared/config/logger";
 import { ApiResponse, AppError } from "./shared/types/common.types";
-import { authRoutes } from "./domains/auth";
 import swaggerUi from "swagger-ui-express";
 import { createSwaggerSpec } from "./api/swagger/swagger.config";
+import { appointmentRoutes } from "./domains/appointments";
+import { authRoutes } from "./domains/auth";
 
 class App {
   public app: Application;
@@ -157,13 +158,13 @@ class App {
 
     // Mount domain routes
     this.app.use("/api/auth", authRoutes);
-    // apiV1.use('/appointments', appointmentRoutes); // To be implemented
-    // apiV1.use('/doctors', doctorRoutes); // To be implemented
-    // apiV1.use('/patients', patientRoutes); // To be implemented
-    // apiV1.use('/patients', patientRoutes); // To be implemented
-    // apiV1.use('/medical-note', medicalNoteRoutes); // To be implemented
-    // apiV1.use('/notifications', notificationRoutes); // To be implemented
-    // apiV1.use('/analytics', analyticsRoutes); // To be implemented
+    this.app.use("/api/appointments", appointmentRoutes);
+    // this.app.use('/doctors', doctorRoutes); // To be implemented
+    // this.app.use('/patients', patientRoutes); // To be implemented
+    // this.app.use('/patients', patientRoutes); // To be implemented
+    // this.app.use('/medical-note', medicalNoteRoutes); // To be implemented
+    // this.app.use('/notifications', notificationRoutes); // To be implemented
+    // this.app.use('/analytics', analyticsRoutes); // To be implemented
 
     // this.app.use(`/api/${config.app.apiVersion}`, apiV1);
 

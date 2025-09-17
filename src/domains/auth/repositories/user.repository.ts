@@ -137,29 +137,48 @@ export class UserRepository {
         throw new NotFoundError("User not found");
       }
 
+      // Apply updates to domain object
       user.update(updateData);
       const dbData = user.toDatabaseFormat();
 
-      await db.query(
-        `UPDATE users SET 
-          first_name = ?, last_name = ?, phone = ?, date_of_birth = ?,
-          is_active = ?, is_verified = ?, email_verified_at = ?,
-          last_login_at = ?, updated_at = CURRENT_TIMESTAMP
-         WHERE id = ? AND tenant_id = ?`,
-        [
-          dbData.first_name,
-          dbData.last_name,
-          dbData.phone,
-          dbData.date_of_birth,
-          dbData.is_active,
-          dbData.is_verified,
-          dbData.email_verified_at,
-          dbData.last_login_at,
-          id,
-          tenantId,
-        ],
-        tenantId
-      );
+      // Map DTO fields to DB columns (whitelist approach)
+      const allowedFields = {
+        firstName: "first_name",
+        lastName: "last_name",
+        phone: "phone",
+        dateOfBirth: "date_of_birth",
+        isActive: "is_active",
+        isVerified: "is_verified",
+        emailVerifiedAt: "email_verified_at",
+        lastLoginAt: "last_login_at",
+      } satisfies Record<keyof UpdateUserData, string>;
+
+      const setClauses: string[] = [];
+      const values: any[] = [];
+
+      for (const key in updateData) {
+        if (updateData[key as keyof UpdateUserData] !== undefined) {
+          const column = allowedFields[key as keyof UpdateUserData];
+          if (column) {
+            setClauses.push(`${column} = ?`);
+            values.push(dbData[column]);
+          }
+        }
+      }
+
+      // Ensure at least one field is being updated
+      if (setClauses.length === 0) {
+        throw new Error("No valid fields provided for update.");
+      }
+
+      // Always update timestamp
+      setClauses.push(`updated_at = CURRENT_TIMESTAMP`);
+
+      // Final SQL query
+      const sql = `UPDATE users SET ${setClauses.join(", ")} WHERE id = ? AND tenant_id = ?`;
+      values.push(id, tenantId);
+
+      await db.query(sql, values, tenantId);
 
       // Invalidate cache
       await redis.del(CACHE_KEYS.USER(id), tenantId);

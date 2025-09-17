@@ -49,7 +49,7 @@ router.use(tenantMiddleware);
 // Public authentication routes
 router.post("/register", authRateLimit, validateRequest(registerSchema), authController.register);
 
-router.post("/login", authRateLimit, validateRequest(loginSchema), authController.login);
+router.post("/login", validateRequest(loginSchema), authController.login);
 
 router.post("/refresh", generalRateLimit, validateRequest(refreshTokenSchema), authController.refreshToken);
 

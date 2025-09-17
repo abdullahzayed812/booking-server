@@ -138,7 +138,7 @@ export interface PermissionContext {
   role: UserRole;
   resource: Resource;
   action: Action;
-  resourceId?: string;
+  resourceId?: string | undefined;
 }
 
 // Auth middleware extended request
