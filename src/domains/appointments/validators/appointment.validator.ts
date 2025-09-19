@@ -122,16 +122,14 @@ export const queryAppointmentsSchema = z
     doctorId: uuidSchema.optional(),
     patientId: uuidSchema.optional(),
     status: z
-      .array(
-        z.enum([
-          AppointmentStatus.SCHEDULED,
-          AppointmentStatus.CONFIRMED,
-          AppointmentStatus.IN_PROGRESS,
-          AppointmentStatus.COMPLETED,
-          AppointmentStatus.CANCELLED,
-          AppointmentStatus.NO_SHOW,
-        ])
-      )
+      .enum([
+        AppointmentStatus.SCHEDULED,
+        AppointmentStatus.CONFIRMED,
+        AppointmentStatus.IN_PROGRESS,
+        AppointmentStatus.COMPLETED,
+        AppointmentStatus.CANCELLED,
+        AppointmentStatus.NO_SHOW,
+      ])
       .optional(),
     startDate: z
       .string()

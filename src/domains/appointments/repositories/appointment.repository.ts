@@ -158,8 +158,8 @@ export class AppointmentRepository {
     }
   ): Promise<AppointmentEntity[]> {
     try {
-      let query = "SELECT * FROM appointments WHERE doctor_id = ? AND tenant_id = ?";
-      const params: any[] = [doctorId, tenantId];
+      let query = "SELECT * FROM appointments WHERE doctor_id = ?";
+      const params: any[] = [doctorId];
 
       if (options?.startDate) {
         query += " AND appointment_date >= ?";
@@ -179,15 +179,23 @@ export class AppointmentRepository {
 
       query += " ORDER BY appointment_date ASC, start_time ASC";
 
-      if (options?.limit) {
-        query += " LIMIT ?";
-        params.push(options.limit);
+      if (options?.limit != null) {
+        const limit = Number(options.limit);
+        if (!Number.isInteger(limit)) throw new Error("Invalid limit");
 
-        if (options?.offset) {
-          query += " OFFSET ?";
-          params.push(options.offset);
+        query += ` LIMIT ${limit}`;
+
+        if (options?.offset != null) {
+          const offset = Number(options.offset);
+          if (!Number.isInteger(offset)) throw new Error("Invalid offset");
+
+          query += ` OFFSET ${offset}`;
         }
       }
+
+      console.log("➡️ SQL Before Execution:", query);
+      console.log("➡️ Params:", params);
+      console.log("➡️ Tenant ID:", tenantId);
 
       const appointments = await db.query(query, params, tenantId);
       return appointments.map((appointmentData) => AppointmentEntity.fromDatabase(appointmentData));

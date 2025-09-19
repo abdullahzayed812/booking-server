@@ -8,14 +8,18 @@ class RedisStore {
   constructor(private windowMs: number) {}
 
   async increment(key: string): Promise<{ totalHits: number; timeToExpire?: number }> {
-    const multi = redis.getClient().multi();
+    const redisClient = redis.getClient();
+    const multi = redisClient.multi();
     const expires = Math.round(this.windowMs / 1000);
 
     multi.incr(key);
     multi.expire(key, expires);
 
     const results = await multi.exec();
-    const totalHits = (results?.[0]?.[1] as number) || 0;
+
+    // Ensure results are in expected format: [ [null, number], [null, 'OK'] ]
+    const incrResult = results?.[0];
+    const totalHits = Array.isArray(incrResult) && typeof incrResult[1] === "number" ? incrResult[1] : 1; // fallback to 1 to avoid invalid totalHits = 0
 
     return {
       totalHits,
