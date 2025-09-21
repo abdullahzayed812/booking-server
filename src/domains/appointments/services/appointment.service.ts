@@ -388,8 +388,6 @@ export class AppointmentService {
         appointments = [];
       }
 
-      // console.log({ appointments });
-
       // Convert to detailed appointments
       const detailedAppointments: AppointmentWithDetails[] = [];
       for (const appointment of appointments) {

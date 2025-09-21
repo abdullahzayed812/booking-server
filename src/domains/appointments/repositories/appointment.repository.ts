@@ -193,10 +193,6 @@ export class AppointmentRepository {
         }
       }
 
-      console.log("➡️ SQL Before Execution:", query);
-      console.log("➡️ Params:", params);
-      console.log("➡️ Tenant ID:", tenantId);
-
       const appointments = await db.query(query, params, tenantId);
       return appointments.map((appointmentData) => AppointmentEntity.fromDatabase(appointmentData));
     } catch (error: any) {
