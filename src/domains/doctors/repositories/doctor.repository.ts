@@ -157,10 +157,9 @@ export class DoctorRepository {
           u.is_verified
         FROM doctors d
         JOIN users u ON d.id = u.id
-        WHERE d.tenant_id = ?
       `;
 
-      const params: any[] = [tenantId];
+      const params: any[] = [];
 
       if (options?.specialization) {
         query += " AND d.specialization = ?";

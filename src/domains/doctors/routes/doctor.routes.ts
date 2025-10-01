@@ -15,9 +15,13 @@ import {
   doctorIdParamSchema,
   overrideIdParamSchema,
 } from "../validators/doctor.validator";
+import { tenantMiddleware } from "@/shared/middleware/tenant.middleware";
 
 const router = Router();
 const doctorController = new DoctorController();
+
+// Routes that require tenant context
+router.use(tenantMiddleware);
 
 // Apply authentication to all routes
 router.use(authenticateToken);
@@ -109,6 +113,43 @@ router.put(
   validateBody(setWeeklyScheduleSchema),
   requirePermission(Resource.AVAILABILITY, Action.UPDATE),
   doctorController.setWeeklySchedule
+);
+
+// Get availability summary
+router.get(
+  "/:id/availability/summary",
+  generalRateLimit,
+  validateParams(doctorIdParamSchema),
+  requirePermission(Resource.AVAILABILITY, Action.READ),
+  doctorController.getAvailabilitySummary
+);
+
+// Validate schedule
+router.post(
+  "/:id/availability/validate",
+  generalRateLimit,
+  validateParams(doctorIdParamSchema),
+  validateBody(setWeeklyScheduleSchema),
+  requirePermission(Resource.AVAILABILITY, Action.READ),
+  doctorController.validateSchedule
+);
+
+// Get available slots for a date
+router.get(
+  "/:id/availability/slots",
+  generalRateLimit,
+  validateParams(doctorIdParamSchema),
+  requirePermission(Resource.AVAILABILITY, Action.READ),
+  doctorController.getAvailableSlots
+);
+
+// Check override conflicts
+router.get(
+  "/:id/availability/check-conflicts",
+  generalRateLimit,
+  validateParams(doctorIdParamSchema),
+  requirePermission(Resource.AVAILABILITY, Action.READ),
+  doctorController.checkOverrideConflicts
 );
 
 // Get availability overrides

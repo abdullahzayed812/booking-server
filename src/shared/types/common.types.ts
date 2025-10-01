@@ -253,3 +253,25 @@ export interface DatabaseTransaction {
   query<T = any>(sql: string, params?: any[]): Promise<T[]>;
   queryOne<T = any>(sql: string, params?: any[]): Promise<T | null>;
 }
+
+// Availability errors
+export class AvailabilityConflictError extends Error {
+  constructor(message: string, public conflicts: string[]) {
+    super(message);
+    this.name = "AvailabilityConflictError";
+  }
+}
+
+export class InvalidTimeSlotError extends Error {
+  constructor(message: string, public invalidSlot: string) {
+    super(message);
+    this.name = "InvalidTimeSlotError";
+  }
+}
+
+export class ScheduleValidationError extends Error {
+  constructor(message: string, public validationErrors: string[]) {
+    super(message);
+    this.name = "ScheduleValidationError";
+  }
+}

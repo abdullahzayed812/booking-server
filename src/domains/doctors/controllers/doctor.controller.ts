@@ -159,7 +159,6 @@ export class DoctorController {
   };
 
   // Availability management endpoints
-
   getDoctorAvailability = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
@@ -172,6 +171,81 @@ export class DoctorController {
       const availability = await this.doctorService.getDoctorAvailability(id, tenantId);
 
       sendSuccess(res, { availability }, "Doctor availability retrieved successfully");
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Get availability summary for dashboard
+  getAvailabilitySummary = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const tenantId = req.tenantId!;
+
+      if (!id) {
+        return sendError(res, "Doctor not found", 404);
+      }
+
+      const summary = await this.doctorService.getAvailabilitySummary(id, tenantId);
+
+      sendSuccess(res, summary, "Availability summary retrieved successfully");
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Validate schedule before saving
+  validateSchedule = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { schedule }: { schedule: WeeklyScheduleSlot[] } = req.body;
+      const tenantId = req.tenantId!;
+
+      if (!id) {
+        return sendError(res, "Doctor not found", 404);
+      }
+
+      const validation = await this.doctorService.validateScheduleConflicts(id, schedule, tenantId);
+
+      sendSuccess(res, validation, "Schedule validation completed");
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Get available slots for a specific date
+  getAvailableSlots = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { date } = req.query;
+      const tenantId = req.tenantId!;
+
+      if (!id || !date) {
+        return sendError(res, "Doctor ID and date are required", 400);
+      }
+
+      const slots = await this.doctorService.getAvailableSlots(id, new Date(date as string), tenantId);
+
+      sendSuccess(res, { availableSlots: slots }, "Available slots retrieved successfully");
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Check for appointment conflicts before creating override
+  checkOverrideConflicts = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { date } = req.query;
+      const tenantId = req.tenantId!;
+
+      if (!id || !date) {
+        return sendError(res, "Doctor ID and date are required", 400);
+      }
+
+      const conflicts = await this.doctorService.validateOverrideConflicts(id, new Date(date as string), tenantId);
+
+      sendSuccess(res, conflicts, "Override conflicts check completed");
     } catch (error) {
       next(error);
     }

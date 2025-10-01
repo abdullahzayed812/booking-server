@@ -241,6 +241,14 @@ export class DoctorAvailabilityEntity {
     return this.availability.isActive;
   }
 
+  get startTime(): string {
+    return this.availability.startTime;
+  }
+
+  get endTime(): string {
+    return this.availability.endTime;
+  }
+
   activate(): void {
     this.availability.isActive = true;
     this.availability.updated_at = new Date();
@@ -342,6 +350,14 @@ export class AvailabilityOverrideEntity {
       start: this.override.startTime,
       end: this.override.endTime,
     };
+  }
+
+  get startTime(): string | undefined {
+    return this.override.startTime;
+  }
+
+  get endTime(): string | undefined {
+    return this.override.endTime;
   }
 
   isAllDayUnavailable(): boolean {

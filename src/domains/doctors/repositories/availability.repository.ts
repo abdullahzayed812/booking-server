@@ -82,9 +82,9 @@ export class AvailabilityRepository {
 
       const availabilities = await db.query(
         `SELECT * FROM doctor_availability 
-         WHERE doctor_id = ? AND tenant_id = ? AND is_active = true
+         WHERE doctor_id = ? AND is_active = true
          ORDER BY day_of_week, start_time`,
-        [doctorId, tenantId],
+        [doctorId],
         tenantId
       );
 
@@ -229,6 +229,124 @@ export class AvailabilityRepository {
       moduleLogger.error("Error setting weekly schedule:", error);
       throw error;
     }
+  }
+
+  // Bulk create availability slots
+  async createBulkAvailability(
+    doctorId: string,
+    availabilitySlots: CreateAvailabilityData[],
+    tenantId: string
+  ): Promise<DoctorAvailabilityEntity[]> {
+    try {
+      const created: DoctorAvailabilityEntity[] = [];
+
+      await db.transaction(async (connection) => {
+        for (const slot of availabilitySlots) {
+          const availabilityEntity = DoctorAvailabilityEntity.create(slot);
+          const dbData = availabilityEntity.toDatabaseFormat();
+
+          const result = await db.executeTransaction<{ insertId: string }>(
+            `INSERT INTO doctor_availability (
+            tenant_id, doctor_id, day_of_week, start_time, end_time, is_active
+          ) VALUES (?, ?, ?, ?, ?, ?)`,
+            [
+              dbData.tenant_id,
+              dbData.doctor_id,
+              dbData.day_of_week,
+              dbData.start_time,
+              dbData.end_time,
+              dbData.is_active,
+            ],
+            connection,
+            tenantId
+          );
+
+          const createdSlot = await this.findAvailabilityById(result[0]!.insertId, tenantId);
+          if (createdSlot) {
+            created.push(createdSlot);
+          }
+        }
+      });
+
+      // Invalidate cache
+      await this.invalidateAvailabilityCache(doctorId, tenantId);
+
+      moduleLogger.info(
+        {
+          doctorId,
+          createdCount: created.length,
+        },
+        "Bulk availability created"
+      );
+
+      return created;
+    } catch (error: any) {
+      moduleLogger.error("Error creating bulk availability:", error);
+      throw error;
+    }
+  }
+
+  // Clear all doctor availability cache
+  async invalidateAllDoctorCache(doctorId: string, tenantId: string): Promise<void> {
+    try {
+      // Invalidate weekly schedule cache
+      await redis.del(CACHE_KEYS.DOCTOR_SCHEDULE(doctorId), tenantId);
+
+      // Invalidate daily availability cache for next 30 days
+      const today = new Date();
+      for (let i = 0; i < 30; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() + i);
+        const dateStr = date.toISOString().split("T")[0];
+        await redis.del(CACHE_KEYS.AVAILABILITY(doctorId, dateStr!), tenantId);
+      }
+
+      moduleLogger.info({ doctorId }, "All doctor cache invalidated");
+    } catch (error: any) {
+      moduleLogger.error("Error invalidating doctor cache:", error);
+      throw error;
+    }
+  }
+
+  // Get availability statistics
+  async getAvailabilityStats(
+    doctorId: string,
+    tenantId: string
+  ): Promise<{
+    totalSlots: number;
+    activeDays: number;
+    averageSlotsPerDay: number;
+    totalWeeklyHours: number;
+  }> {
+    try {
+      const availability = await this.findDoctorAvailability(doctorId, tenantId);
+
+      const totalSlots = availability.length;
+      const activeDays = new Set(availability.map((slot) => slot.dayOfWeek)).size;
+      const averageSlotsPerDay = activeDays > 0 ? Math.round((totalSlots / activeDays) * 100) / 100 : 0;
+
+      let totalWeeklyHours = 0;
+      for (const slot of availability) {
+        const startMinutes = this.timeToMinutes(slot.startTime);
+        const endMinutes = this.timeToMinutes(slot.endTime);
+        totalWeeklyHours += (endMinutes - startMinutes) / 60;
+      }
+
+      return {
+        totalSlots,
+        activeDays,
+        averageSlotsPerDay,
+        totalWeeklyHours: Math.round(totalWeeklyHours * 100) / 100,
+      };
+    } catch (error: any) {
+      moduleLogger.error("Error getting availability stats:", error);
+      throw error;
+    }
+  }
+
+  private timeToMinutes(time: string): number {
+    const [hours, minutes] = time.split(":").map(Number);
+    return hours! * 60 + minutes!;
   }
 
   // Availability override methods

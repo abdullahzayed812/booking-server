@@ -353,6 +353,210 @@ export class DoctorService {
     }
   }
 
+  // Get availability summary
+  async getAvailabilitySummary(
+    doctorId: string,
+    tenantId: string
+  ): Promise<{
+    totalSlots: number;
+    activeDays: number;
+    upcomingOverrides: number;
+    weeklyHours: number;
+  }> {
+    try {
+      const availability = await this.availabilityRepository.findDoctorAvailability(doctorId, tenantId);
+
+      // Get overrides for next 30 days
+      const startDate = new Date();
+      const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      const overrides = await this.availabilityRepository.findOverridesByDateRange(
+        doctorId,
+        startDate,
+        endDate,
+        tenantId
+      );
+
+      const totalSlots = availability.length;
+      const activeDays = new Set(availability.map((slot) => slot.dayOfWeek)).size;
+      const upcomingOverrides = overrides.length;
+
+      // Calculate weekly hours
+      let weeklyHours = 0;
+      for (const slot of availability) {
+        const startMinutes = this.timeToMinutes(slot.startTime);
+        const endMinutes = this.timeToMinutes(slot.endTime);
+        weeklyHours += (endMinutes - startMinutes) / 60;
+      }
+
+      return {
+        totalSlots,
+        activeDays,
+        upcomingOverrides,
+        weeklyHours: Math.round(weeklyHours * 100) / 100,
+      };
+    } catch (error: any) {
+      moduleLogger.error("Error getting availability summary:", error);
+      throw error;
+    }
+  }
+
+  // Validate schedule conflicts
+  async validateScheduleConflicts(
+    doctorId: string,
+    schedule: WeeklyScheduleSlot[],
+    tenantId: string
+  ): Promise<{ hasConflicts: boolean; conflicts: string[] }> {
+    try {
+      const conflicts: string[] = [];
+
+      // Check for time overlaps within the same day
+      const daySlots = new Map<DayOfWeek, WeeklyScheduleSlot[]>();
+
+      for (const slot of schedule) {
+        if (!daySlots.has(slot.dayOfWeek)) {
+          daySlots.set(slot.dayOfWeek, []);
+        }
+        daySlots.get(slot.dayOfWeek)!.push(slot);
+      }
+
+      const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+      for (const [dayOfWeek, slots] of daySlots.entries()) {
+        if (slots.length > 1) {
+          // Sort slots by start time
+          slots.sort((a, b) => this.timeToMinutes(a.startTime) - this.timeToMinutes(b.startTime));
+
+          // Check for overlaps
+          for (let i = 0; i < slots.length - 1; i++) {
+            const currentEnd = this.timeToMinutes(slots[i]!.endTime);
+            const nextStart = this.timeToMinutes(slots[i + 1]!.startTime);
+
+            if (currentEnd > nextStart) {
+              conflicts.push(
+                `Overlapping time slots on ${dayNames[dayOfWeek]}: ${slots[i]!.startTime}-${slots[i]!.endTime} and ${
+                  slots[i + 1]!.startTime
+                }-${slots[i + 1]!.endTime}`
+              );
+            }
+          }
+        }
+      }
+
+      // Check for unreasonable time slots
+      for (const slot of schedule) {
+        const startMinutes = this.timeToMinutes(slot.startTime);
+        const endMinutes = this.timeToMinutes(slot.endTime);
+        const duration = endMinutes - startMinutes;
+
+        if (duration < 30) {
+          conflicts.push(
+            `Time slot too short on ${dayNames[slot.dayOfWeek]}: ${slot.startTime}-${slot.endTime} (minimum 30 minutes)`
+          );
+        }
+
+        if (duration > 12 * 60) {
+          // 12 hours
+          conflicts.push(
+            `Time slot too long on ${dayNames[slot.dayOfWeek]}: ${slot.startTime}-${slot.endTime} (maximum 12 hours)`
+          );
+        }
+
+        if (startMinutes < 6 * 60 || startMinutes > 23 * 60) {
+          // Before 6 AM or after 11 PM
+          conflicts.push(`Unusual start time on ${dayNames[slot.dayOfWeek]}: ${slot.startTime}`);
+        }
+      }
+
+      return {
+        hasConflicts: conflicts.length > 0,
+        conflicts,
+      };
+    } catch (error: any) {
+      moduleLogger.error("Error validating schedule conflicts:", error);
+      throw error;
+    }
+  }
+
+  // Get available slots for a specific date
+  async getAvailableSlots(doctorId: string, date: Date, tenantId: string): Promise<string[]> {
+    try {
+      const dayOfWeek = ((date.getDay() + 6) % 7) as DayOfWeek; // Convert Sunday=0 to Monday=0
+
+      // Get regular availability for this day
+      const regularAvailability = await this.availabilityRepository.findAvailabilityByDay(
+        doctorId,
+        dayOfWeek,
+        tenantId
+      );
+
+      // Check for overrides on this date
+      const override = await this.availabilityRepository.findOverrideByDoctorAndDate(doctorId, date, tenantId);
+
+      let availableSlots: string[] = [];
+
+      if (override) {
+        if (override.isAvailable && override.startTime && override.endTime) {
+          // Use override times
+          availableSlots = this.generateTimeSlots(override.startTime, override.endTime);
+        }
+        // If override exists but isAvailable is false, return empty array
+      } else {
+        // Use regular availability
+        for (const slot of regularAvailability) {
+          const slotTimes = this.generateTimeSlots(slot.startTime, slot.endTime);
+          availableSlots.push(...slotTimes);
+        }
+      }
+
+      // Remove duplicate slots and sort
+      availableSlots = [...new Set(availableSlots)].sort();
+
+      // TODO: Remove already booked slots by checking appointments table
+      // const bookedSlots = await this.getBookedSlots(doctorId, date, tenantId);
+      // availableSlots = availableSlots.filter(slot => !bookedSlots.includes(slot));
+
+      return availableSlots;
+    } catch (error: any) {
+      moduleLogger.error("Error getting available slots:", error);
+      throw error;
+    }
+  }
+
+  // Validate override conflicts with existing appointments
+  async validateOverrideConflicts(
+    doctorId: string,
+    date: Date,
+    tenantId: string
+  ): Promise<{ hasAppointments: boolean; appointmentCount: number; conflictingAppointments?: any[] }> {
+    try {
+      // TODO: Implement appointment checking when appointments module is available
+      // For now, return no conflicts
+      return {
+        hasAppointments: false,
+        appointmentCount: 0,
+      };
+
+      /* Future implementation:
+    const dateStr = date.toISOString().split('T')[0];
+    const appointments = await this.appointmentRepository.findByDoctorAndDate(doctorId, dateStr, tenantId);
+    
+    return {
+      hasAppointments: appointments.length > 0,
+      appointmentCount: appointments.length,
+      conflictingAppointments: appointments.map(apt => ({
+        id: apt.id,
+        patientName: apt.patientName,
+        time: apt.time,
+        status: apt.status
+      }))
+    };
+    */
+    } catch (error: any) {
+      moduleLogger.error("Error validating override conflicts:", error);
+      throw error;
+    }
+  }
+
   async createAvailabilityOverride(
     doctorId: string,
     request: AvailabilityOverrideRequest,
@@ -476,6 +680,23 @@ export class DoctorService {
       moduleLogger.error("Error getting doctor stats:", error);
       throw error;
     }
+  }
+
+  // Helper method to generate time slots (move to private if not already exists)
+  private generateTimeSlots(startTime: string, endTime: string, intervalMinutes: number = 30): string[] {
+    const slots: string[] = [];
+    const start = new Date(`2000-01-01 ${startTime}`);
+    const end = new Date(`2000-01-01 ${endTime}`);
+
+    const current = new Date(start);
+
+    while (current < end) {
+      const timeString = current.toTimeString().slice(0, 5); // HH:MM format
+      slots.push(timeString);
+      current.setMinutes(current.getMinutes() + intervalMinutes);
+    }
+
+    return slots;
   }
 
   // Private validation methods

@@ -11,6 +11,7 @@ import swaggerUi from "swagger-ui-express";
 import { createSwaggerSpec } from "./api/swagger/swagger.config";
 import { appointmentRoutes } from "./domains/appointments";
 import { authRoutes } from "./domains/auth";
+import { doctorRoutes } from "./domains/doctors";
 
 class App {
   public app: Application;
@@ -159,7 +160,7 @@ class App {
     // Mount domain routes
     this.app.use("/api/auth", authRoutes);
     this.app.use("/api/appointments", appointmentRoutes);
-    // this.app.use('/doctors', doctorRoutes); // To be implemented
+    this.app.use("/api/doctors", doctorRoutes); // To be implemented
     // this.app.use('/patients', patientRoutes); // To be implemented
     // this.app.use('/patients', patientRoutes); // To be implemented
     // this.app.use('/medical-note', medicalNoteRoutes); // To be implemented

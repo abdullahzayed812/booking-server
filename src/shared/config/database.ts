@@ -129,6 +129,8 @@ class DatabaseManager {
         logDatabaseQuery(finalSql, finalParams, duration);
       }
 
+      // console.log(finalParams, finalSql);
+
       return rows as T[];
     } catch (error) {
       const duration = Date.now() - start;

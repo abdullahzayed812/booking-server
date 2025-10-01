@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { DayOfWeek } from "@/shared/types/common.types";
 
 // Time validation schema
 const timeSchema = z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, "Time must be in HH:mm format");
@@ -358,3 +357,11 @@ export const validateSpecialization = (specialization: string): boolean => {
   // Allow custom specializations but warn if not common
   return specialization.length >= 2 && specialization.length <= 255;
 };
+
+export const getAvailableSlotsSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)"),
+});
+
+export const checkConflictsSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)"),
+});
