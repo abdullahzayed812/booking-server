@@ -1,6 +1,6 @@
 # Frontend Development Guide for Booking App API
 
-**Version: 2.0**
+**Version: 2.1**
 
 ## 1. Overview
 
@@ -23,11 +23,32 @@ Here are the core TypeScript types that are used throughout the API.
 ```typescript
 // src/shared/types/common.types.ts
 
+// Standard Response Wrappers
+export interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data: T;
+}
+
+export interface PaginatedResponse<T> {
+  success: boolean;
+  message?: string;
+  data: T[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export enum UserRole {
   ADMIN = "admin",
   DOCTOR = "doctor",
   PATIENT = "patient",
 }
+// ... (rest of the types)
+```
 
 export enum AppointmentStatus {
   SCHEDULED = "scheduled",
@@ -96,6 +117,23 @@ export interface MedicalNote extends BaseEntity {
   diagnosis?: string;
   treatmentPlan?: string;
   medications?: string;
+}
+
+export interface Notification extends BaseEntity {
+  userId: string;
+  type: "email" | "sms" | "push" | "in_app";
+  title: string;
+  message: string;
+  isRead: boolean;
+  data?: any;
+  readAt?: Date;
+}
+
+export interface AnalyticsReport {
+  totalAppointments: number;
+  totalPatients: number;
+  totalDoctors: number;
+  revenue: number;
 }
 ```
 
@@ -194,19 +232,17 @@ All API endpoints are prefixed with `/api/v1` and require authentication and a `
 
     **Response (200 OK):**
     ```typescript
-    interface GetPatientsResponse {
-      patients: Patient[];
-      total: number;
-    }
+    type GetPatientsResponse = PaginatedResponse<PatientWithUser>;
     ```
 
 *   #### `GET /:id`
     Get a specific patient's profile.
 
     **Response (200 OK):**
+    **Response (200 OK):**
     ```typescript
-    // Returns the Patient object with user details
-    interface PatientWithUser extends Patient, User {}
+    // Returns the Patient object with user details wrapped in ApiResponse
+    type GetPatientResponse = ApiResponse<PatientWithUser>;
     ```
 
 *   #### `PUT /:id`
@@ -240,20 +276,19 @@ All API endpoints are prefixed with `/api/v1` and require authentication and a `
     ```
 
     **Response (200 OK):**
+    **Response (200 OK):**
     ```typescript
-    interface GetDoctorsResponse {
-      doctors: Doctor[];
-      total: number;
-    }
+    type GetDoctorsResponse = PaginatedResponse<DoctorWithUser>;
     ```
 
 *   #### `GET /:id`
     Get a specific doctor's profile.
 
     **Response (200 OK):**
+    **Response (200 OK):**
     ```typescript
-    // Returns the Doctor object with user details
-    interface DoctorWithUser extends Doctor, User {}
+    // Returns the Doctor object with user details wrapped in ApiResponse
+    type GetDoctorResponse = ApiResponse<DoctorWithUser>;
     ```
 
 *   #### `GET /:id/availability`
@@ -288,12 +323,10 @@ All API endpoints are prefixed with `/api/v1` and require authentication and a `
     ```
 
     **Response (201 Created):**
+    **Response (201 Created):**
     ```typescript
-    // Returns the newly created Appointment object with details
-    interface AppointmentWithDetails extends Appointment {
-      doctorName: string;
-      patientName: string;
-    }
+    // Returns the newly created Appointment object with details wrapped in ApiResponse
+    type CreateAppointmentResponse = ApiResponse<AppointmentWithDetails>;
     ```
 
 *   #### `GET /doctors/:doctorId/available-slots`
@@ -308,13 +341,9 @@ All API endpoints are prefixed with `/api/v1` and require authentication and a `
     ```
 
     **Response (200 OK):**
+    **Response (200 OK):**
     ```typescript
-    interface TimeSlot {
-        start: string; // ISO 8601 format
-        end: string; // ISO 8601 format
-    }
-
-    type AvailableSlotsResponse = TimeSlot[];
+    type AvailableSlotsResponse = ApiResponse<{ availableSlots: string[] }>;
     ```
 
 *   #### `POST /:id/cancel`
@@ -330,6 +359,132 @@ All API endpoints are prefixed with `/api/v1` and require authentication and a `
     **Response (200 OK):**
     ```json
     { "success": true, "message": "Appointment cancelled successfully" }
+    ```
+
+### 4.4. Medical Notes (`/medical-notes`)
+
+*   #### `GET /`
+    Get a list of medical notes.
+
+    **Query Parameters:**
+    ```typescript
+    interface QueryMedicalNotesParams {
+      patientId?: string;
+      doctorId?: string;
+    }
+    ```
+
+    **Response (200 OK):**
+    ```typescript
+    type GetMedicalNotesResponse = MedicalNote[];
+    ```
+
+*   #### `POST /`
+    Create a new medical note.
+
+    **Request Body:**
+    ```typescript
+    interface CreateMedicalNotePayload {
+      appointmentId: string;
+      patientId: string;
+      chiefComplaint?: string;
+      diagnosis?: string;
+      treatmentPlan?: string;
+      medications?: string;
+    }
+    ```
+
+    **Response (201 Created):**
+    ```typescript
+    // Returns the newly created MedicalNote object
+    ```
+
+*   #### `GET /:id`
+    Get a specific medical note.
+
+    **Response (200 OK):**
+    ```typescript
+    // Returns the MedicalNote object
+    ```
+
+*   #### `PUT /:id`
+    Update a medical note.
+
+    **Request Body:**
+    ```typescript
+    interface UpdateMedicalNotePayload {
+      chiefComplaint?: string;
+      diagnosis?: string;
+      treatmentPlan?: string;
+      medications?: string;
+    }
+    ```
+
+    **Response (200 OK):**
+    ```typescript
+    // Returns the updated MedicalNote object
+    ```
+
+*   #### `DELETE /:id`
+    Delete a medical note.
+
+    **Response (200 OK):**
+    ```json
+    { "success": true, "message": "Medical note deleted successfully" }
+    ```
+
+### 4.5. Notifications (`/notifications`)
+
+*   #### `GET /`
+    Get all notifications for the authenticated user.
+
+    **Response (200 OK):**
+    ```typescript
+    type GetNotificationsResponse = Notification[];
+    ```
+
+*   #### `PUT /:id/read`
+    Mark a notification as read.
+
+    **Response (200 OK):**
+    ```json
+    { "success": true, "message": "Notification marked as read" }
+    ```
+
+*   #### `DELETE /:id`
+    Delete a notification.
+
+    **Response (200 OK):**
+    ```json
+    { "success": true, "message": "Notification deleted successfully" }
+    ```
+
+### 4.6. Analytics (`/analytics`)
+
+*   #### `GET /dashboard`
+    Get dashboard statistics (Admin only).
+
+    **Response (200 OK):**
+    ```typescript
+    interface DashboardStats {
+      totalAppointments: number;
+      totalPatients: number;
+      totalDoctors: number;
+      revenue: number;
+    }
+    ```
+
+*   #### `GET /trends`
+    Get appointment trends (Admin only).
+
+    **Response (200 OK):**
+    ```typescript
+    interface AppointmentTrend {
+      date: string;
+      count: number;
+    }
+
+    type AppointmentTrendsResponse = AppointmentTrend[];
     ```
 
 ## 5. WebSocket Events

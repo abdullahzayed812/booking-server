@@ -118,7 +118,8 @@ export class AppointmentRepository {
           d.specialization as doctor_specialization,
           CONCAT(pu.first_name, ' ', pu.last_name) as patient_name,
           pu.email as patient_email,
-          pu.phone as patient_phone
+          pu.phone as patient_phone,
+          pu.id as patient_id
         FROM appointments a
         JOIN users du ON a.doctor_id = du.id
         JOIN doctors d ON a.doctor_id = d.id
@@ -158,8 +159,8 @@ export class AppointmentRepository {
     }
   ): Promise<AppointmentEntity[]> {
     try {
-      let query = "SELECT * FROM appointments WHERE doctor_id = ?";
-      const params: any[] = [doctorId];
+      let query = "SELECT * FROM appointments WHERE doctor_id = ? AND tenant_id = ?";
+      const params: any[] = [doctorId, tenantId];
 
       if (options?.startDate) {
         query += " AND appointment_date >= ?";
@@ -518,7 +519,7 @@ export class AppointmentRepository {
     }
   }
 
-  private async invalidateRelatedCaches(doctorId: string, patientId: string, tenantId: string): Promise<void> {
+  private async invalidateRelatedCaches(doctorId: string, _patientId: string, tenantId: string): Promise<void> {
     // Invalidate doctor and patient availability caches
     const today = new Date().toISOString().split("T")[0];
     await redis.del(CACHE_KEYS.AVAILABILITY(doctorId, today!), tenantId);

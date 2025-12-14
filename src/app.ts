@@ -12,6 +12,10 @@ import { createSwaggerSpec } from "./api/swagger/swagger.config";
 import { appointmentRoutes } from "./domains/appointments";
 import { authRoutes } from "./domains/auth";
 import { doctorRoutes } from "./domains/doctors";
+import { patientRoutes } from "./domains/patients";
+import { medicalNoteRoutes } from "./domains/medical-notes";
+import { notificationRoutes } from "./domains/notifications";
+import { analyticsRoutes } from "./domains/analytics";
 
 class App {
   public app: Application;
@@ -80,9 +84,9 @@ class App {
     this.app.use(
       express.json({
         limit: "10mb",
-        verify: (req, res, buf) => {
+        verify: (_req, _res, buf) => {
           // Store raw body for webhook verification if needed
-          (req as any).rawBody = buf;
+          (_req as any).rawBody = buf;
         },
       })
     );
@@ -160,12 +164,11 @@ class App {
     // Mount domain routes
     this.app.use("/api/auth", authRoutes);
     this.app.use("/api/appointments", appointmentRoutes);
-    this.app.use("/api/doctors", doctorRoutes); // To be implemented
-    // this.app.use('/patients', patientRoutes); // To be implemented
-    // this.app.use('/patients', patientRoutes); // To be implemented
-    // this.app.use('/medical-note', medicalNoteRoutes); // To be implemented
-    // this.app.use('/notifications', notificationRoutes); // To be implemented
-    // this.app.use('/analytics', analyticsRoutes); // To be implemented
+    this.app.use("/api/doctors", doctorRoutes);
+    this.app.use("/api/patients", patientRoutes);
+    this.app.use("/api/medical-notes", medicalNoteRoutes);
+    this.app.use("/api/notifications", notificationRoutes);
+    this.app.use("/api/analytics", analyticsRoutes);
 
     // this.app.use(`/api/${config.app.apiVersion}`, apiV1);
 

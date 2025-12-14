@@ -51,15 +51,11 @@ class DatabaseManager {
     const start = Date.now();
 
     try {
-      // Add tenant isolation to all queries except system tables
-      const finalSql = this.addTenantIsolation(sql, tenantId);
-      const finalParams = this.addTenantParams(params, tenantId, sql);
-
-      const [rows] = await this.pool.execute(finalSql, finalParams);
+      const [rows] = await this.pool.execute(sql, params);
       const duration = Date.now() - start;
 
       if (config.app.isDevelopment) {
-        logDatabaseQuery(finalSql, finalParams, duration);
+        logDatabaseQuery(sql, params, duration);
       }
 
       return rows as T[];
@@ -119,17 +115,12 @@ class DatabaseManager {
     const start = Date.now();
 
     try {
-      const finalSql = this.addTenantIsolation(sql, tenantId);
-      const finalParams = this.addTenantParams(params, tenantId, sql);
-
-      const [rows] = await connection.execute(finalSql, finalParams);
+      const [rows] = await connection.execute(sql, params);
       const duration = Date.now() - start;
 
       if (config.app.isDevelopment) {
-        logDatabaseQuery(finalSql, finalParams, duration);
+        logDatabaseQuery(sql, params, duration);
       }
-
-      // console.log(finalParams, finalSql);
 
       return rows as T[];
     } catch (error) {
@@ -146,53 +137,6 @@ class DatabaseManager {
       );
       throw error;
     }
-  }
-
-  private addTenantIsolation(sql: string, tenantId?: string): string {
-    if (!tenantId) return sql;
-
-    // Skip tenant isolation for system queries
-    const systemTables = ["tenants", "migrations"];
-    const hasSystemTable = systemTables.some((table) => sql.toLowerCase().includes(table.toLowerCase()));
-
-    if (hasSystemTable) return sql;
-
-    // Add tenant_id filter to WHERE clause if not exists
-    const lowerSql = sql.toLowerCase();
-
-    if (lowerSql.includes("select") && !lowerSql.includes("tenant_id")) {
-      // Add tenant_id to WHERE clause
-      if (lowerSql.includes("where")) {
-        return sql.replace(/where/i, "WHERE tenant_id = ? AND");
-      } else {
-        // Find the position to insert WHERE clause
-        const fromMatch = sql.match(/from\s+\w+/i);
-        if (fromMatch) {
-          const insertPos = fromMatch.index! + fromMatch[0].length;
-          return sql.slice(0, insertPos) + " WHERE tenant_id = ?" + sql.slice(insertPos);
-        }
-      }
-    }
-
-    return sql;
-  }
-
-  private addTenantParams(params: any[], tenantId?: string, sql?: string): any[] {
-    if (!tenantId || !sql) return params;
-
-    // Skip for system queries
-    const systemTables = ["tenants", "migrations"];
-    const hasSystemTable = systemTables.some((table) => sql.toLowerCase().includes(table.toLowerCase()));
-
-    if (hasSystemTable) return params;
-
-    // If we added tenant_id filter, prepend tenantId to params
-    const lowerSql = sql.toLowerCase();
-    if (lowerSql.includes("select") && !lowerSql.includes("tenant_id")) {
-      return [tenantId, ...params];
-    }
-
-    return params;
   }
 
   public async close(): Promise<void> {

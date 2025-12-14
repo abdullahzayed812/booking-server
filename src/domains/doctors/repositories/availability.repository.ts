@@ -82,9 +82,9 @@ export class AvailabilityRepository {
 
       const availabilities = await db.query(
         `SELECT * FROM doctor_availability 
-         WHERE doctor_id = ? AND is_active = true
+         WHERE doctor_id = ? AND tenant_id = ? AND is_active = true
          ORDER BY day_of_week, start_time`,
-        [doctorId],
+        [doctorId, tenantId],
         tenantId
       );
 

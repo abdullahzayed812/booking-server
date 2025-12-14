@@ -15,9 +15,13 @@ import {
   searchPatientsSchema,
   patientIdParamSchema,
 } from "../validators/patient.validator";
+import { tenantMiddleware } from "@/shared/middleware/tenant.middleware";
 
 const router = Router();
 const patientController = new PatientController();
+
+// Routes that require tenant context
+router.use(tenantMiddleware);
 
 // Apply authentication to all routes
 router.use(authenticateToken);

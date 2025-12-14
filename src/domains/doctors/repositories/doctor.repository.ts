@@ -20,7 +20,7 @@ export class DoctorRepository {
       const doctorEntity = DoctorEntity.create(doctorData);
       const dbData = doctorEntity.toDatabaseFormat();
 
-      const result = await db.query<{ insertId: string }>(
+      await db.query<{ insertId: string }>(
         `INSERT INTO doctors (
           id, tenant_id, specialization, license_number, bio, 
           consultation_fee, consultation_duration, is_accepting_appointments
@@ -157,9 +157,10 @@ export class DoctorRepository {
           u.is_verified
         FROM doctors d
         JOIN users u ON d.id = u.id
+        WHERE d.tenant_id = ?
       `;
 
-      const params: any[] = [];
+      const params: any[] = [tenantId];
 
       if (options?.specialization) {
         query += " AND d.specialization = ?";
@@ -187,6 +188,8 @@ export class DoctorRepository {
           params.push(options.offset);
         }
       }
+
+      console.log(query);
 
       const doctors = await db.query(query, params, tenantId);
 

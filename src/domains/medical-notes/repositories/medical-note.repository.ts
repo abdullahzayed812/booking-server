@@ -12,7 +12,6 @@ import {
 const moduleLogger = createModuleLogger("MedicalNoteRepository");
 
 export class MedicalNoteRepository {
-  private readonly CACHE_TTL = 1800; // 30 minutes
 
   async create(noteData: CreateMedicalNoteData): Promise<MedicalNoteEntity> {
     try {
